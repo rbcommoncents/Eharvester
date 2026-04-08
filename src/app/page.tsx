@@ -1,6 +1,26 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+type RecommendationReasonView = {
+  message?: string;
+  points?: number;
+  category?: string;
+};
+
+function toRecommendationReasons(value: unknown): RecommendationReasonView[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item): item is Record<string, unknown> => {
+      return typeof item === "object" && item !== null;
+    })
+    .map((item) => ({
+      message: typeof item.message === "string" ? item.message : undefined,
+      points: typeof item.points === "number" ? item.points : undefined,
+      category: typeof item.category === "string" ? item.category : undefined,
+    }));
+}
+
 export default async function HomePage() {
   const applications = await prisma.application.findMany({
     orderBy: { createdAt: "desc" },
@@ -213,8 +233,7 @@ export default async function HomePage() {
                         isRemote={item.jobPosting.isRemote}
                         score={item.score}
                         applyUrl={item.jobPosting.applyUrl}
-                        reasons={Array.isArray(item.reasons) ? item.reasons : []}
-                      />
+                        reasons={toRecommendationReasons(item.reasons)}                      />
                     ))}
                   </div>
                 )}
