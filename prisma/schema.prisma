@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Application {
+  id          Int      @id @default(autoincrement())
+  company     String
+  jobTitle    String
+  status      String   @default("Applied")
+  source      String?
+  jobUrl      String?
+  location    String?
+  salary      String?
+  notes       String?
+  dateApplied DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Profile {
+  id              Int                 @id @default(autoincrement())
+  fullName        String?
+  headline        String?
+  remoteOnly      Boolean             @default(false)
+  salaryTarget    String?
+  yearsExperience String?
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  recommendations JobRecommendation[]
+}
+
+model ProfileTargetTitle {
+  id        Int      @id @default(autoincrement())
+  value     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model ProfileLocation {
+  id        Int      @id @default(autoincrement())
+  value     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model ProfileSkill {
+  id        Int      @id @default(autoincrement())
+  value     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model ProfileCertification {
+  id        Int      @id @default(autoincrement())
+  value     String
+  createdAt DateTime @default(now())
+}
+
+model ProfilePreferredSource {
+  id        Int      @id @default(autoincrement())
+  value     String
+  createdAt DateTime @default(now())
+}
+
+model ProfileExcludedSource {
+  id        Int      @id @default(autoincrement())
+  value     String
+  createdAt DateTime @default(now())
+}
+
+model JobSource {
+  id           Int      @id @default(autoincrement())
+  name         String
+  sourceType   String
+  companyKey   String
+  baseUrl      String?
+  enabled      Boolean  @default(true)
+  lastRunAt    DateTime?
+  lastStatus   String?
+  lastError    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([sourceType, companyKey])
+  @@index([enabled, sourceType])
+}
+
+model JobPosting {
+  id              Int                 @id @default(autoincrement())
+  externalId      String              @unique
+  title           String
+  company         String
+  location        String?
+  description     String?
+  applyUrl        String
+  source          String?
+  sourceType      String?
+  sourceKey       String?
+  sourceJobId     String?
+  isRemote        Boolean             @default(false)
+  postedAt        DateTime?
+  importedAt      DateTime            @default(now())
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  recommendations JobRecommendation[]
+
+  @@index([company])
+  @@index([title])
+  @@index([sourceType, sourceKey])
+  @@index([postedAt])
+}
+
+model JobRecommendation {
+  id           Int        @id @default(autoincrement())
+  profileId    Int
+  jobPostingId Int
+  score        Int
+  reasons      Json?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  profile      Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, jobPostingId])
+  @@index([profileId, score])
+}
