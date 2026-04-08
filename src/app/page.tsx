@@ -42,17 +42,29 @@ export default async function HomePage() {
     orderBy: { value: "asc" },
   });
 
-  const recommendations =
-    profile
-      ? await prisma.jobRecommendation.findMany({
-          where: { profileId: profile.id },
-          include: {
-            jobPosting: true,
-          },
-          orderBy: [{ score: "desc" }, { createdAt: "desc" }],
-          take: 10,
-        })
-      : [];
+  const recommendationRows = profile
+    ? await prisma.jobRecommendation.findMany({
+        where: { profileId: profile.id },
+        include: {
+          jobPosting: true,
+        },
+        orderBy: [{ score: "desc" }, { createdAt: "desc" }],
+        take: 10,
+      })
+    : [];
+
+  const recommendations = recommendationRows.map((item) => ({
+    id: item.id,
+    score: item.score,
+    reasons: toRecommendationReasons(item.reasons),
+    jobPosting: {
+      title: item.jobPosting.title,
+      company: item.jobPosting.company,
+      location: item.jobPosting.location,
+      isRemote: item.jobPosting.isRemote,
+      applyUrl: item.jobPosting.applyUrl,
+    },
+  }));
 
   const jobPostingCount = await prisma.jobPosting.count();
   const jobSourceCount = await prisma.jobSource.count({
@@ -233,7 +245,8 @@ export default async function HomePage() {
                         isRemote={item.jobPosting.isRemote}
                         score={item.score}
                         applyUrl={item.jobPosting.applyUrl}
-                        reasons={toRecommendationReasons(item.reasons)}                      />
+                        reasons={item.reasons}
+                      />
                     ))}
                   </div>
                 )}
@@ -425,7 +438,7 @@ function RecommendationCard({
   isRemote: boolean;
   score: number;
   applyUrl: string;
-  reasons: Array<{ message?: string; points?: number; category?: string }>;
+  reasons: RecommendationReasonView[];
 }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
